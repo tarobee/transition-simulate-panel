@@ -24,10 +24,10 @@
       </div>
     </div>
     <div class="menu">
-      <p class="menu__easing" v-if="!preset.mode" ref="bezier">{{ easing }}</p>
-      <div v-if="preset.mode" class="menu__preset">
+      <p class="menu__easing" v-if="!preset_mode" ref="bezier">{{ easing }}</p>
+      <div v-if="preset_mode" class="menu__preset">
         <button class="menu__icon menu__icon-prev" @click="prevPreset">&lt;</button>
-        <p class="menu__preset__name">{{ preset.name }}</p>
+        <p class="menu__preset__name">{{ preset_name }}</p>
         <button class="menu__icon menu__icon-next" @click="nextPreset">&gt;</button>
       </div>
     </div>
@@ -47,15 +47,19 @@ import EasingControlPoint from "@/components/EasingControlPoint.vue";
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
 
-const preset = {
-  mode: false,
-  name: "",
-  easing: "",
-  data: [],
-  index: 0
+let preset_mode:boolean = false, preset_name:string = "", preset_easing:string = "", preset_data:preset[], preset_index:number = 0;
+
+let linearMode:boolean = false;
+
+interface preset {
+  name: string
+  easing: string
 }
 
-let linearMode = false;
+interface linearPoint {
+  x: number
+  y: number
+}
 
 const easing = computed({
   get() {
@@ -70,12 +74,12 @@ const canvas = ref<HTMLCanvasElement | null>(null);
 const p1 = ref<HTMLButtonElement | null>(null);
 const p2 = ref<HTMLButtonElement | null>(null);
 const canvas_offset:number = 150;
-let ctx:CanvasRenderingContext2D, canvas_rect:DOMRect;
+let ctx:any, canvas_rect:any;
 onMounted(() => {
   init();
 })
 
-const init = (() => {
+const init = () => {
   if (window.navigator.userAgent.indexOf('Chrome') <= -1) {
     preset_1.splice(1, preset_1.length - 1);
   }
@@ -86,7 +90,7 @@ const init = (() => {
   setPoint(p1, easing_points.p1.x, easing_points.p1.y, canvas_rect.width, canvas_offset);
   setPoint(p2, easing_points.p2.x, easing_points.p2.y, canvas_rect.width, canvas_offset);
   draw();
-})
+}
 
 const clearCanvas = () => {
   ctx.fillStyle = "#333";
@@ -101,8 +105,8 @@ const clearCanvas = () => {
 const draw = () => {
   clearCanvas();
   const start = { x: 0, y: canvas_rect.width + canvas_offset };
-  const cp1_rect = p1.value?.getBoundingClientRect();
-  const cp2_rect = p2.value?.getBoundingClientRect();
+  const cp1_rect:any = p1.value?.getBoundingClientRect();
+  const cp2_rect:any = p2.value?.getBoundingClientRect();
   const cp1 = { x: cp1_rect.x - canvas_rect.x, y: cp1_rect.y - canvas_rect.y };
   const cp2 = { x: cp2_rect.x - canvas_rect.x, y: cp2_rect.y - canvas_rect.y };
   const end = { x: canvas_rect.width, y: canvas_offset };
@@ -139,7 +143,7 @@ const draw = () => {
     + ', ' + Math.floor((((canvas_rect.width + canvas_offset) - cp2.y) / canvas_rect.width) * 100) / 100 + ')';
 }
 
-const drawLinear = (points) => {
+const drawLinear = (points:any) => {
   clearCanvas();
   ctx.lineWidth = 2;
   ctx.strokeStyle = "orange";
@@ -159,7 +163,7 @@ const drawLinear = (points) => {
   easing.value = _linear;
 }
 
-const moveAt = ((pageX, pageY, target) => {
+const moveAt = ((pageX:number, pageY:number, target:any) => {
   let _left = pageX - canvas_rect.x - target.offsetWidth / 2;
   let _top = pageY - canvas_rect.y - target.offsetHeight / 2;
   if(_left < 0){
@@ -171,16 +175,16 @@ const moveAt = ((pageX, pageY, target) => {
   target.style.top = _top + 'px';
 })
 
-const buttonMouseDown = ((event) => {
-  if(preset.mode) preset.mode = false;
+const buttonMouseDown = ((event:any) => {
+  if(preset_mode) preset_mode = false;
   const target = event.target;
   moveAt(event.pageX, event.pageY, target);
   draw();
   mouseMoveEventSet(target);
 })
 
-const mouseMoveEventSet = (_target) => {
-  const onMouseMove = ((event) => {
+const mouseMoveEventSet = (_target:any) => {
+  const onMouseMove = ((event:any) => {
     moveAt(event.pageX, event.pageY, _target);
     draw();
   })
@@ -192,11 +196,11 @@ const mouseMoveEventSet = (_target) => {
   })
 }
 
-const canvasMouseDown = (event)=>{
+const canvasMouseDown = (event:any)=>{
   if (!linearMode) {
-    if(preset.mode) preset.mode = false;
-    const cp1_rect = p1?.value?.getBoundingClientRect();
-    const cp2_rect = p2?.value?.getBoundingClientRect();
+    if(preset_mode) preset_mode = false;
+    const cp1_rect:any = p1?.value?.getBoundingClientRect();
+    const cp2_rect:any = p2?.value?.getBoundingClientRect();
     const cp1 = { x: cp1_rect.x, y: cp1_rect.y };
     const cp2 = { x: cp2_rect.x, y: cp2_rect.y };
     let dist1 = Math.sqrt(Math.pow(event.pageX - cp1.x, 2) + Math.pow(event.pageY - cp1.y, 2));
@@ -228,24 +232,24 @@ const canvasMouseDown = (event)=>{
   }
 }
 
-const canvasMouseMove = (event) => {
+const canvasMouseMove = (event:any) => {
   if (linearMode) {
     const imagedata = ctx.getImageData(event.pageX - canvas_rect.x, event.pageY - Math.floor(canvas_rect.y), 1, 1);
     if ((imagedata.data[0] === 34 && imagedata.data[1] === 34 && imagedata.data[2] === 34) || (imagedata.data[0] === 51 && imagedata.data[1] === 51 && imagedata.data[2] === 51)) {
-      canvas.value.style.cursor = 'auto';
+      if(canvas.value) canvas.value.style.cursor = 'auto';
     }else{
-      canvas.value.style.cursor = 'pointer';
+      if(canvas.value) canvas.value.style.cursor = 'pointer';
     }
   }
 }
 
-let preset_1 = [
+let preset_1: preset[] = [
   {'name': 'linear', 'easing': 'linear(0 0%, 1 100%)'},
   {'name': 'elastic', 'easing': 'linear(0 0%, 0.22 2.1%, 0.86 6.5%, 1.11 8.6%, 1.3 10.7%, 1.35 11.8%, 1.37 12.9%, 1.37 13.7%, 1.36 14.5%, 1.32 16.2%, 1.03 21.8%, 0.94 24%, 0.89 25.9%, 0.88 26.85%, 0.87 27.8%, 0.87 29.25%, 0.88 30.7%, 0.91 32.4%, 0.98 36.4%, 1.01 38.3%, 1.04 40.5%, 1.05 42.7%, 1.05 44.1%, 1.04 45.7%, 1 53.3%, 0.99 55.4%, 0.98 57.5%, 0.99 60.7%, 1 68.1%, 1.01 72.2%, 1 86.7%, 1 100%)'},
   {'name': 'bounce', 'easing': 'linear(0 0%, 0 2.27%, 0.02 4.53%, 0.04 6.8%, 0.06 9.07%, 0.1 11.33%, 0.14 13.6%, 0.25 18.15%, 0.39 22.7%, 0.56 27.25%, 0.77 31.8%, 1 36.35%, 0.89 40.9%, 0.85 43.18%, 0.81 45.45%, 0.79 47.72%, 0.77 50%, 0.75 52.27%, 0.75 54.55%, 0.75 56.82%, 0.77 59.1%, 0.79 61.38%, 0.81 63.65%, 0.85 65.93%, 0.89 68.2%, 1 72.7%, 0.97 74.98%, 0.95 77.25%, 0.94 79.53%, 0.94 81.8%, 0.94 84.08%, 0.95 86.35%, 0.97 88.63%, 1 90.9%, 0.99 93.18%, 0.98 95.45%, 0.99 97.73%, 1 100%)'},
   {'name': 'emphasized', 'easing': 'linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%)'}
 ]
-const preset_2 = [
+const preset_2: preset[] = [
   {'name': 'ease-in-out', 'easing': 'cubic-bezier(0.42, 0, 0.58, 1)'},
   {'name': 'In Out · Sine', 'easing': 'cubic-bezier(0.45, 0.05, 0.55, 0.95)'},
   {'name': 'In Out · Quadratic', 'easing': 'cubic-bezier(0.46, 0.03, 0.52, 0.96)'},
@@ -253,7 +257,7 @@ const preset_2 = [
   {'name': 'Fast Out, Slow In', 'easing': 'cubic-bezier(0.4, 0, 0.2, 1)'},
   {'name': 'In Out・Back', 'easing': 'cubic-bezier(0.68, -0.55, 0.27, 1.55)'}
 ]
-const preset_3 = [
+const preset_3: preset[] = [
   {'name': 'Fast Out, Linear In', 'easing': 'cubic-bezier(0.4, 0, 1, 1)'},
   {'name': 'ease-in', 'easing': 'cubic-bezier(0.42, 0, 1, 1)'},
   {'name': 'In · Sine', 'easing': 'cubic-bezier(0.47, 0, 0.75, 0.72)'},
@@ -261,7 +265,7 @@ const preset_3 = [
   {'name': 'In · Cubic', 'easing': 'cubic-bezier(0.55, 0.06, 0.68, 0.19)'},
   {'name': 'In · Back', 'easing': 'cubic-bezier(0.6, -0.28, 0.74, 0.05)'},
 ]
-const preset_4 = [
+const preset_4: preset[] = [
   {'name': 'ease-out', 'easing': 'cubic-bezier(0, 0, 0.58, 1)'},
   {'name': 'Out · Sine', 'easing': 'cubic-bezier(0.39, 0.58, 0.57, 1)'},
   {'name': 'Out · Quadratic', 'easing': 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'},
@@ -270,21 +274,21 @@ const preset_4 = [
   {'name': 'Out · Back', 'easing': 'cubic-bezier(0.18, 0.89, 0.32, 1.28)'},
 ]
 
-let linearPoints: EasingControlPoint[] = [];
-const emitPresetBtn = (data, index, linear) => {
-  if (!preset.mode) preset.mode = true;
-  linearMode = !!linear;
+let linearPoints:linearPoint[] = [];
+const emitPresetBtn = (data:preset[], index:number, linear:boolean) => {
+  if (!preset_mode) preset_mode = true;
+  if(linearMode != linear) linearMode = linear;
 
-  preset.data = data;
-  preset.name = data[index].name;
-  preset.index = index;
+  preset_data = data;
+  preset_name = data[index].name;
+  preset_index = index;
 
   if(linearMode){
-    linearPoints = returnLinearPoints(data[preset.index].easing);
+    linearPoints = returnLinearPoints(data[preset_index].easing);
     drawLinear(linearPoints);
   }else{
     linearPoints = [];
-    const easing_points = returnPoints(data[preset.index].easing);
+    const easing_points = returnPoints(data[preset_index].easing);
     setPoint(p1, easing_points.p1.x, easing_points.p1.y, canvas_rect.width, canvas_offset);
     setPoint(p2, easing_points.p2.x, easing_points.p2.y, canvas_rect.width, canvas_offset);
     draw();
@@ -293,7 +297,7 @@ const emitPresetBtn = (data, index, linear) => {
   preview();
 }
 
-const emitControlPoint = (index, point) => {
+const emitControlPoint = (index:number, point:linearPoint) => {
   linearPoints[index] = point;
   drawLinear(linearPoints);
 }
@@ -303,29 +307,29 @@ const emitControlPointFix = () => {
 }
 
 const prevPreset = ()=>{
-  let index = preset.index - 1;
+  let index = preset_index - 1;
   if(index < 0){
-    index = preset.data.length - 1;
+    index = preset_data.length - 1;
   }
-  emitPresetBtn(preset.data, index, linearMode)
+  emitPresetBtn(preset_data, index, linearMode)
 }
 const nextPreset = ()=>{
-  let index = preset.index + 1;
-  if(index >= preset.data.length){
+  let index = preset_index + 1;
+  if(index >= preset_data.length){
     index = 0;
   }
-  emitPresetBtn(preset.data, index, linearMode)
+  emitPresetBtn(preset_data, index, linearMode)
 }
 
-const returnPoints = (bezier) => {
-  let split_data:String[] = bezier.split(',');
+const returnPoints = (bezier:string) => {
+  let split_data:string[] = bezier.split(',');
   return ({
     'p1': {'x':parseFloat(split_data[0].replace("cubic-bezier(", "")), 'y': parseFloat(split_data[1])},
     'p2': {'x':parseFloat(split_data[2]), 'y': parseFloat(split_data[3].replace(")", ""))}
   })
 }
 
-const returnLinearPoints = (linear) => {
+const returnLinearPoints = (linear:string) => {
   let split_dataset:String[] = linear.split(',');
   let points = [];
   for (let i = 0; i < split_dataset.length; i++) {
@@ -336,13 +340,13 @@ const returnLinearPoints = (linear) => {
   return points
 }
 
-const setPoint = (p, x, y, w, offset) => {
+const setPoint = (p:any, x:number, y:number, w:number, offset:number) => {
   p.value.style.left = x * w + "px";
   p.value.style.top = (w + offset) - (y * w) + "px";
 }
 
 const balls = ref<HTMLElement[]>([])
-const setBallRef = (el: HTMLElement) => {
+const setBallRef = (el:any) => {
   if (el) balls.value.push(el)
 }
 const ball = ref<HTMLElement | null>(null);
@@ -379,7 +383,7 @@ const preview = ()=>{
       default:
         break;
     }
-    if ("style" in ball.value) {
+    if (ball.value && "style" in ball.value) {
       ball.value.style.animationTimingFunction = easingValue;
     }
     ball.value?.classList.toggle('start');
@@ -405,7 +409,7 @@ const clickCopyBtn = ()=>{
   setTimeout(()=>{message.value?.classList.remove('active');}, 1000)
 }
 
-const copyToClipboard = (value) => {
+const copyToClipboard = (value:any) => {
   if (navigator.clipboard) {
     return navigator.clipboard.writeText(value);
   }

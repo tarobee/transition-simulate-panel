@@ -9,17 +9,25 @@
 <script setup lang="ts">
 import {onMounted, ref} from "vue";
 
+interface preset {
+  name: string
+  easing: string
+}
+
 const props = defineProps({
-  presetData: Array
+  presetData: {
+    type:Array as () => Array<preset>,
+    required: true
+  }
 });
 
-const emit = defineEmits<{(e: 'emitPresetBtn', value?:[], index?:number, linear?:boolean): void}>()
+const emit = defineEmits<{(e: 'emitPresetBtn', value:preset[], index:number, linear:boolean): void}>()
 
 const clickEvent = (): void => emit('emitPresetBtn', props.presetData, 0, linearMode)
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 const canvas_offset:number = 0;
-let ctx:CanvasRenderingContext2D, canvas_rect:DOMRect, linearMode:boolean;
+let ctx:any, canvas_rect:any, linearMode:boolean;
 onMounted(() => {
   canvas_rect = canvas.value?.getBoundingClientRect();
   ctx = canvas.value?.getContext("2d");
@@ -43,7 +51,7 @@ const draw = (() => {
   const end = { x: canvas_rect.width, y: canvas_offset };
   ctx.lineWidth = 1;
   ctx.strokeStyle = "orange";
-  let points = returnPoints(props?.presetData?.[0].easing)
+  let points:controlPoints = returnPoints(props?.presetData?.[0].easing)
   const cp1 = { x: points.p1.x * canvas_rect.width, y: canvas_rect.width - points.p1.y * canvas_rect.width };
   const cp2 = { x: points.p2.x * canvas_rect.width, y: canvas_rect.width - points.p2.y * canvas_rect.width };
   ctx.beginPath();
@@ -51,11 +59,20 @@ const draw = (() => {
   ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y);
   ctx.stroke();
 })
+
+interface linearPoint {
+  x: number
+  y: number
+}
+interface controlPoints {
+  p1:linearPoint,
+  p2:linearPoint,
+}
 const drawLinear = () => {
   clearCanvas();
   ctx.lineWidth = 1;
   ctx.strokeStyle = "orange";
-  let points = returnLinearPoints(props?.presetData?.[0].easing);
+  let points:linearPoint[] = returnLinearPoints(props.presetData[0].easing);
   ctx.beginPath();
   ctx.moveTo(0, canvas_rect.width + canvas_offset);
   for (let i = 0; i < points.length; i++) {
@@ -63,14 +80,14 @@ const drawLinear = () => {
   }
   ctx.stroke();
 }
-const returnPoints = (bezier) => {
-  let split_data:String[] = bezier.split(',');
+const returnPoints = (bezier:string) => {
+  let split_data:string[] = bezier.split(',');
   return ({
     'p1': {'x':parseFloat(split_data[0].replace("cubic-bezier(", "")), 'y': parseFloat(split_data[1])},
     'p2': {'x':parseFloat(split_data[2]), 'y': parseFloat(split_data[3].replace(")", ""))}
   })
 }
-const returnLinearPoints = (linear) => {
+const returnLinearPoints = (linear:string) => {
   let split_dataset:String[] = linear.split(',');
   let points = [];
   for (let i = 0; i < split_dataset.length; i++) {

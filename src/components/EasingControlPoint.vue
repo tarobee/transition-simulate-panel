@@ -1,29 +1,50 @@
 <template>
   <div class="points">
-    <button :class="(i == 0 || i == points?.length - 1)?{'cp':true,'inactive':true}:{'cp':true}" v-for="(point, i) in points" :style="{left: point.x * rect.width + 'px', top:(rect.width - (point.y * rect.width)) + 'px'}" :id="'point_' + i" @mousedown="buttonMouseDown"></button>
+    <button :class="btnClass(i)" v-for="(point, i) in points" :style="{left: point.x * rect.width + 'px', top:rect.width - (point.y * rect?.width) + 'px'}" :id="'point_' + i" @mousedown="buttonMouseDown"></button>
   </div>
 </template>
 
 <script setup lang="ts">
-
 const props = defineProps({
-  points: Array as () => Array<object>,
-  rect: Object,
-  offset: Number
+  points: {
+    type: Array as () => Array<linearPoint>,
+    required: true
+  },
+  rect: {
+    type:DOMRect,
+    required: true
+  },
+  offset: {
+    type: Number,
+    required: true
+  }
 });
 
+interface linearPoint {
+  x: number
+  y: number
+}
+
 const emit = defineEmits<{
-  (e: 'emitControlPoint', index?:number, point?:object): void,
+  (e: 'emitControlPoint', index:number, point:linearPoint): void,
   (e: 'emitControlPointFix'): void,
 }>()
 
-const buttonMouseDown = ((event) => {
+const btnClass = (i:number) => {
+  if(!(i == 0 || i == props.points?.length - 1)){
+    return {'cp':true}
+  }else{
+    return {'cp':true,'inactive':true}
+  }
+}
+
+const buttonMouseDown = ((event:any) => {
   const target = event.target;
   // moveAt(event.pageX, event.pageY, target);
   mouseMoveEventSet(target);
 })
 
-const moveAt = ((pageX, pageY, target) => {
+const moveAt = ((pageX:number, pageY:number, target:any) => {
   let _left = pageX - props.rect.x - target.offsetWidth / 2;
   let _top = pageY - props.rect.y - target.offsetHeight / 2 - props.offset;
   if(_left < 0){
@@ -37,8 +58,8 @@ const moveAt = ((pageX, pageY, target) => {
   emit('emitControlPoint', parseInt(target.getAttribute('id')?.replace('point_', '')), {x:Math.floor(_left / props.rect.width * 100)/100, y:Math.floor((1 - _top / props.rect.width) * 100)/100});
 })
 
-const mouseMoveEventSet = (_target) => {
-  const onMouseMove = ((event) => {
+const mouseMoveEventSet = (_target:any) => {
+  const onMouseMove = ((event:any) => {
     moveAt(event.pageX, event.pageY, _target);
   })
   document.addEventListener('mousemove', onMouseMove);
