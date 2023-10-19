@@ -90,6 +90,12 @@ const init = () => {
   setPoint(p1, easing_points.p1.x, easing_points.p1.y, canvas_rect.width, canvas_offset);
   setPoint(p2, easing_points.p2.x, easing_points.p2.y, canvas_rect.width, canvas_offset);
   draw();
+
+  window.addEventListener('resize', resizeHandler);
+}
+
+const resizeHandler = () => {
+  canvas_rect = canvas.value?.getBoundingClientRect();
 }
 
 const clearCanvas = () => {
