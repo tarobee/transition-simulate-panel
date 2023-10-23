@@ -43,6 +43,7 @@
 import {computed, onMounted, ref} from 'vue'
 import EasingPresetButton from "@/components/EasingPresetButton.vue";
 import EasingControlPoint from "@/components/EasingControlPoint.vue";
+import {ReturnPoints, ReturnLinearPoints} from "@/functions/ReturnPoints";
 
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
@@ -76,23 +77,20 @@ const p2 = ref<HTMLButtonElement | null>(null);
 const canvas_offset:number = 150;
 let ctx:any, canvas_rect:any;
 onMounted(() => {
-  init();
-})
-
-const init = () => {
   if (window.navigator.userAgent.indexOf('Chrome') <= -1) {
     preset_1.splice(1, preset_1.length - 1);
   }
+
   canvas_rect = canvas.value?.getBoundingClientRect();
   ctx = canvas.value?.getContext("2d");
 
-  const easing_points = returnPoints(easing.value);
+  const easing_points = ReturnPoints(easing.value);
   setPoint(p1, easing_points.p1.x, easing_points.p1.y, canvas_rect.width, canvas_offset);
   setPoint(p2, easing_points.p2.x, easing_points.p2.y, canvas_rect.width, canvas_offset);
   draw();
 
   window.addEventListener('resize', resizeHandler);
-}
+})
 
 const resizeHandler = () => {
   canvas_rect = canvas.value?.getBoundingClientRect();
@@ -290,11 +288,11 @@ const emitPresetBtn = (data:preset[], index:number, linear:boolean) => {
   preset_index = index;
 
   if(linearMode){
-    linearPoints = returnLinearPoints(data[preset_index].easing);
+    linearPoints = ReturnLinearPoints(data[preset_index].easing);
     drawLinear(linearPoints);
   }else{
     linearPoints = [];
-    const easing_points = returnPoints(data[preset_index].easing);
+    const easing_points = ReturnPoints(data[preset_index].easing);
     setPoint(p1, easing_points.p1.x, easing_points.p1.y, canvas_rect.width, canvas_offset);
     setPoint(p2, easing_points.p2.x, easing_points.p2.y, canvas_rect.width, canvas_offset);
     draw();
@@ -325,25 +323,6 @@ const nextPreset = ()=>{
     index = 0;
   }
   emitPresetBtn(preset_data, index, linearMode)
-}
-
-const returnPoints = (bezier:string) => {
-  let split_data:string[] = bezier.split(',');
-  return ({
-    'p1': {'x':parseFloat(split_data[0].replace("cubic-bezier(", "")), 'y': parseFloat(split_data[1])},
-    'p2': {'x':parseFloat(split_data[2]), 'y': parseFloat(split_data[3].replace(")", ""))}
-  })
-}
-
-const returnLinearPoints = (linear:string) => {
-  let split_dataset:String[] = linear.split(',');
-  let points = [];
-  for (let i = 0; i < split_dataset.length; i++) {
-    let data = split_dataset[i].trim().split(" ");
-    points.push({x: parseFloat(data[1].replace(")", "").replace('%', '')) * 0.01, y: parseFloat(data[0].replace("linear(", ""))})
-  }
-
-  return points
 }
 
 const setPoint = (p:any, x:number, y:number, w:number, offset:number) => {
